@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="PostPilot" />
+  <meta name="theme-color" content="#0A0F1E" />
+  <title>PostPilot — LinkedIn Post Generator</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <style>
+    /* ── TOKENS ── */
+    :root {
+      --bg:        #0A0F1E;
+      --surface:   #111827;
+      --card:      #1A2235;
+      --border:    #1E3A5F;
+      --accent:    #2D8CFF;
+      --accent2:   #00C2CB;
+      --text:      #F0F4FF;
+      --muted:     #8899BB;
+      --success:   #22D3A5;
+      --danger:    #FF4D6D;
+      --radius:    16px;
+      --font-head: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-body: 'SF Pro Text',    -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100dvh;
+      padding-bottom: env(safe-area-inset-bottom);
+      overscroll-behavior: none;
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(10,15,30,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: calc(env(safe-area-inset-top) + 14px) 20px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .logo-icon {
+      width: 34px; height: 34px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; font-weight: 900; color: #fff;
+      font-family: var(--font-head);
+      letter-spacing: -1px;
+    }
+    .logo-text { font-size: 17px; font-weight: 700; font-family: var(--font-head); }
+    .logo-text span { color: var(--accent); }
+
+    .tab-bar {
+      display: flex; gap: 4px;
+      background: var(--surface);
+      border-radius: 10px; padding: 3px;
+    }
+    .tab {
+      padding: 5px 12px; border-radius: 8px; border: none;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      color: var(--muted); background: transparent;
+      transition: all 0.2s;
+    }
+    .tab.active { background: var(--accent); color: #fff; }
+
+    /* ── MAIN ── */
+    main { padding: 20px 16px; max-width: 480px; margin: 0 auto; }
+
+    /* ── SETUP SCREEN ── */
+    .setup-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .setup-card h2 {
+      font-size: 15px; font-weight: 700; margin-bottom: 4px;
+      font-family: var(--font-head);
+    }
+    .setup-card p { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+
+    label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
+
+    input, textarea, select {
+      width: 100%; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text); font-family: var(--font-body);
+      font-size: 14px; padding: 12px 14px;
+      outline: none; transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+    input[type="password"] { letter-spacing: 2px; }
+    textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+    select option { background: var(--surface); }
+
+    .field { margin-bottom: 16px; }
+
+    .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border);
+      font-size: 13px; font-weight: 500; cursor: pointer; background: var(--surface);
+      color: var(--muted); transition: all 0.2s; user-select: none;
+    }
+    .chip.selected { border-color: var(--accent); background: rgba(45,140,255,0.15); color: var(--accent); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      width: 100%; padding: 15px; border-radius: 12px; border: none;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; font-family: var(--font-head);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+    }
+    .btn-primary:active { transform: scale(0.97); opacity: 0.9; }
+    .btn-secondary {
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost { background: transparent; color: var(--muted); font-size: 13px; width: auto; padding: 8px 0; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── GENERATE TAB ── */
+    .tone-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .tone-card {
+      padding: 12px; border-radius: 12px; border: 1.5px solid var(--border);
+      background: var(--surface); cursor: pointer; transition: all 0.2s;
+      text-align: center;
+    }
+    .tone-card.selected { border-color: var(--accent); background: rgba(45,140,255,0.1); }
+    .tone-card .emoji { font-size: 22px; display: block; margin-bottom: 4px; }
+    .tone-card .name { font-size: 12px; font-weight: 600; color: var(--text); }
+    .tone-card .desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── POST OUTPUT ── */
+    .post-output {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; margin-top: 16px;
+      display: none;
+    }
+    .post-output.visible { display: block; }
+    .post-meta {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .post-meta span { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .char-count { font-size: 12px; }
+    .char-count.over { color: var(--danger); }
+    .char-count.ok { color: var(--success); }
+
+    #post-text {
+      min-height: 160px; font-size: 14px; line-height: 1.65;
+      border-color: transparent; background: transparent;
+      padding: 0; font-family: var(--font-body);
+    }
+    #post-text:focus { border-color: transparent; }
+
+    .action-row { display: flex; gap: 8px; margin-top: 14px; }
+    .action-row .btn { width: auto; flex: 1; padding: 12px 10px; font-size: 13px; }
+
+    /* ── QUEUE TAB ── */
+    .queue-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .queue-header h2 { font-size: 16px; font-weight: 700; font-family: var(--font-head); }
+    .badge {
+      background: var(--accent); color: #fff; border-radius: 20px;
+      font-size: 11px; font-weight: 700; padding: 3px 8px;
+    }
+
+    .queue-item {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
+      position: relative;
+    }
+    .queue-item-meta {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .status-dot {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .status-dot::before {
+      content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor;
+    }
+    .status-dot.draft { color: var(--muted); }
+    .status-dot.scheduled { color: var(--accent); }
+    .status-dot.posted { color: var(--success); }
+
+    .queue-text {
+      font-size: 13px; line-height: 1.6; color: var(--text);
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      overflow: hidden; margin-bottom: 12px;
+    }
+    .queue-actions { display: flex; gap: 8px; }
+    .queue-actions .btn { font-size: 12px; padding: 8px 12px; }
+
+    .empty-state {
+      text-align: center; padding: 48px 20px;
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .empty-state p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+    /* ── SCHEDULE NEXT ── */
+    .next-post-card {
+      background: linear-gradient(135deg, rgba(45,140,255,0.12), rgba(0,194,203,0.08));
+      border: 1px solid rgba(45,140,255,0.3);
+      border-radius: var(--radius); padding: 16px; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .next-post-icon { font-size: 28px; flex-shrink: 0; }
+    .next-post-info h3 { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+    .next-post-info p { font-size: 12px; color: var(--muted); }
+
+    /* ── LOADING ── */
+    .spinner {
+      width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: calc(env(safe-area-inset-bottom) + 20px);
+      left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); padding: 12px 20px; border-radius: 30px;
+      font-size: 14px; font-weight: 600; z-index: 999;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      white-space: nowrap; pointer-events: none;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── SETTINGS ── */
+    .settings-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-label { font-size: 14px; font-weight: 500; }
+    .settings-value { font-size: 13px; color: var(--muted); }
+
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">PP</div>
+    <div class="logo-text">Post<span>Pilot</span></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab('generate')">Generate</button>
+    <button class="tab" onclick="switchTab('queue')">Queue</button>
+    <button class="tab" onclick="switchTab('settings')">Settings</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ══ GENERATE TAB ══ -->
+  <div id="tab-generate">
+
+    <div class="setup-card">
+      <h2>What's today's post about?</h2>
+      <p>Pick a topic or write your own idea</p>
+      <div class="field">
+        <label>Topic</label>
+        <div class="chip-group" id="topic-chips">
+          <div class="chip selected" onclick="selectChip(this, 'topic')">AI in Banking</div>
+          <div class="chip" onclick="selectChip(this, 'topic')">Fintech Trends</div>
+          <div class="chip" onclick="selectChip(this, 'topic')">Career Lessons</div>
+          <div class="chip" onclick="selectChip(this, 'topic')">Tech Leadership</div>
+          <div class="chip" onclick="selectChip(this, 'topic')">Data & Analytics</div>
+          <div class="chip" onclick="selectChip(this, 'topic')">My Own Idea ✏️</div>
+        </div>
+      </div>
+
+      <div class="field" id="custom-topic-field" style="display:none">
+        <label>Your topic idea</label>
+        <input type="text" id="custom-topic" placeholder="e.g. Why Databricks changed how I think about data..." />
+      </div>
+
+      <div class="field">
+        <label>Tone</label>
+        <div class="tone-grid">
+          <div class="tone-card selected" onclick="selectTone(this)" data-tone="Insightful & professional">
+            <span class="emoji">💡</span>
+            <div class="name">Insightful</div>
+            <div class="desc">Thought leadership</div>
+          </div>
+          <div class="tone-card" onclick="selectTone(this)" data-tone="Storytelling & personal">
+            <span class="emoji">📖</span>
+            <div class="name">Story</div>
+            <div class="desc">Personal journey</div>
+          </div>
+          <div class="tone-card" onclick="selectTone(this)" data-tone="Bold & contrarian">
+            <span class="emoji">🔥</span>
+            <div class="name">Bold</div>
+            <div class="desc">Hot take</div>
+          </div>
+          <div class="tone-card" onclick="selectTone(this)" data-tone="Practical & list-based">
+            <span class="emoji">📋</span>
+            <div class="name">Tactical</div>
+            <div class="desc">Tips & lists</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="generate-btn" onclick="generatePost()">
+        <span>✨ Generate Post</span>
+      </button>
+    </div>
+
+    <div class="post-output" id="post-output">
+      <div class="post-meta">
+        <span>Your Draft</span>
+        <span class="char-count ok" id="char-count">0 / 3000</span>
+      </div>
+      <textarea id="post-text" oninput="updateCharCount()" placeholder="Your post will appear here..."></textarea>
+      <div class="divider"></div>
+      <div class="action-row">
+        <button class="btn btn-secondary" onclick="generatePost()">🔄 Regenerate</button>
+        <button class="btn btn-secondary" onclick="saveToQueue()">📅 Save to Queue</button>
+        <button class="btn btn-primary" onclick="copyPost()">📋 Copy</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ QUEUE TAB ══ -->
+  <div id="tab-queue" style="display:none">
+    <div class="queue-header">
+      <h2>Post Queue</h2>
+      <span class="badge" id="queue-badge">0</span>
+    </div>
+
+    <div class="next-post-card" id="next-post-banner" style="display:none">
+      <div class="next-post-icon">📅</div>
+      <div class="next-post-info">
+        <h3 id="next-post-title">Next post scheduled</h3>
+        <p id="next-post-date">—</p>
+      </div>
+    </div>
+
+    <div id="queue-list">
+      <div class="empty-state">
+        <div class="icon">✍️</div>
+        <h3>No posts queued yet</h3>
+        <p>Generate a post and save it to your queue. Posts are scheduled every 2 days automatically.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SETTINGS TAB ══ -->
+  <div id="tab-settings" style="display:none">
+    <div class="setup-card">
+      <h2>API Setup</h2>
+      <p>Connect your free Gemini API key to power post generation</p>
+
+      <div class="field">
+        <label>Gemini API Key</label>
+        <input type="password" id="api-key-input" placeholder="AIzaSy..." />
+      </div>
+      <div class="field">
+        <label>Your Name / Brand</label>
+        <input type="text" id="profile-name" placeholder="e.g. Kumar Saurav" />
+      </div>
+      <div class="field">
+        <label>Your Role</label>
+        <input type="text" id="profile-role" placeholder="e.g. Senior Tech Lead at Bank of America" />
+      </div>
+      <div class="field">
+        <label>Focus Areas (helps AI personalise posts)</label>
+        <input type="text" id="profile-focus" placeholder="e.g. AI, Fintech, Data Engineering" />
+      </div>
+      <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
+
+    <div class="setup-card">
+      <h2>Posting Schedule</h2>
+      <p>PostPilot reminds you to post every 2 days</p>
+      <div class="settings-row">
+        <span class="settings-label">Frequency</span>
+        <span class="settings-value">Every 2 days</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Posts in queue</span>
+        <span class="settings-value" id="settings-queue-count">0</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Total generated</span>
+        <span class="settings-value" id="settings-total-count">0</span>
+      </div>
+    </div>
+
+    <div class="setup-card">
+      <h2>How to Add to Home Screen</h2>
+      <p>1. Tap the <strong>Share</strong> icon in Safari (box with arrow)<br>
+         2. Scroll down and tap <strong>"Add to Home Screen"</strong><br>
+         3. Tap <strong>Add</strong> — PostPilot appears as an app icon! 📱</p>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast">✅ Copied to clipboard!</div>
+
+<script>
+  // ── STATE ──
+  let queue = JSON.parse(localStorage.getItem('pp_queue') || '[]');
+  let settings = JSON.parse(localStorage.getItem('pp_settings') || '{}');
+  let totalGenerated = parseInt(localStorage.getItem('pp_total') || '0');
+  let selectedTone = 'Insightful & professional';
+  let selectedTopic = 'AI in Banking';
+
+  // ── INIT ──
+  function init() {
+    if (settings.apiKey) document.getElementById('api-key-input').value = settings.apiKey;
+    if (settings.name)   document.getElementById('profile-name').value = settings.name;
+    if (settings.role)   document.getElementById('profile-role').value = settings.role;
+    if (settings.focus)  document.getElementById('profile-focus').value = settings.focus;
+    renderQueue();
+  }
+
+  // ── TABS ──
+  function switchTab(tab) {
+    ['generate','queue','settings'].forEach(t => {
+      document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+    });
+    document.querySelectorAll('.tab').forEach((btn, i) => {
+      btn.classList.toggle('active', ['generate','queue','settings'][i] === tab);
+    });
+    if (tab === 'settings') updateSettingsStats();
+    if (tab === 'queue') renderQueue();
+  }
+
+  // ── CHIP / TONE SELECT ──
+  function selectChip(el, group) {
+    document.querySelectorAll('#topic-chips .chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    const isCustom = el.textContent.includes('My Own Idea');
+    document.getElementById('custom-topic-field').style.display = isCustom ? 'block' : 'none';
+    selectedTopic = isCustom ? '' : el.textContent;
+  }
+
+  function selectTone(el) {
+    document.querySelectorAll('.tone-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedTone = el.dataset.tone;
+  }
+
+  // ── GENERATE ──
+  async function generatePost() {
+    const apiKey = (document.getElementById('api-key-input').value || settings.apiKey || '').trim();
+    if (!apiKey) {
+      showToast('⚠️ Add your Gemini API key in Settings first');
+      switchTab('settings');
+      return;
+    }
+
+    const topic = selectedTopic || document.getElementById('custom-topic').value.trim();
+    if (!topic) { showToast('⚠️ Enter a topic idea'); return; }
+
+    const name  = settings.name  || 'a senior tech professional';
+    const role  = settings.role  || 'technology leader in banking';
+    const focus = settings.focus || 'AI, fintech, and data engineering';
+
+    const prompt = `You are a LinkedIn ghostwriter for ${name}, who is a ${role} with expertise in ${focus}.
+
+Write a single LinkedIn post about: "${topic}"
+Tone: ${selectedTone}
+
+Rules:
+- 150–280 words max
+- No generic intros like "I'm excited to share"
+- Open with a bold hook — first line must stop the scroll
+- Use short paragraphs (1-2 sentences max)
+- End with 1 thought-provoking question or clear takeaway
+- Add 3–5 relevant hashtags at the end
+- Sound human, not AI-generated
+- Do NOT use bullet points with dashes, use line breaks instead
+
+Write ONLY the post. No preamble or explanation.`;
+
+    const btn = document.getElementById('generate-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div><span>Generating...</span>';
+
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.85, maxOutputTokens: 600 }
+          })
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.error) {
+        showToast('❌ API error: ' + (data.error.message || 'Check your key'));
+        return;
+      }
+
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (!text) { showToast('❌ No response. Try again.'); return; }
+
+      document.getElementById('post-text').value = text.trim();
+      updateCharCount();
+      document.getElementById('post-output').classList.add('visible');
+      document.getElementById('post-output').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      totalGenerated++;
+      localStorage.setItem('pp_total', totalGenerated);
+
+    } catch (e) {
+      showToast('❌ Network error. Check connection.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<span>✨ Generate Post</span>';
+    }
+  }
+
+  // ── CHAR COUNT ──
+  function updateCharCount() {
+    const len = document.getElementById('post-text').value.length;
+    const el = document.getElementById('char-count');
+    el.textContent = `${len} / 3000`;
+    el.className = 'char-count ' + (len > 3000 ? 'over' : 'ok');
+  }
+
+  // ── COPY ──
+  async function copyPost() {
+    const text = document.getElementById('post-text').value;
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('📋 Copied! Paste into LinkedIn.');
+    } catch {
+      showToast('📋 Select & copy the text above');
+    }
+  }
+
+  // ── QUEUE ──
+  function saveToQueue() {
+    const text = document.getElementById('post-text').value.trim();
+    if (!text) return;
+
+    const lastDate = queue.length ? new Date(queue[queue.length - 1].scheduledFor) : new Date();
+    const nextDate = new Date(Math.max(lastDate, new Date()));
+    if (queue.length > 0) nextDate.setDate(nextDate.getDate() + 2);
+
+    queue.push({
+      id: Date.now(),
+      text,
+      status: 'draft',
+      scheduledFor: nextDate.toISOString(),
+      createdAt: new Date().toISOString()
+    });
+
+    localStorage.setItem('pp_queue', JSON.stringify(queue));
+    showToast('📅 Saved to queue!');
+    renderQueue();
+  }
+
+  function deleteFromQueue(id) {
+    queue = queue.filter(p => p.id !== id);
+    localStorage.setItem('pp_queue', JSON.stringify(queue));
+    renderQueue();
+    showToast('🗑️ Removed from queue');
+  }
+
+  function markPosted(id) {
+    const item = queue.find(p => p.id === id);
+    if (item) { item.status = 'posted'; item.postedAt = new Date().toISOString(); }
+    localStorage.setItem('pp_queue', JSON.stringify(queue));
+    renderQueue();
+    showToast('✅ Marked as posted!');
+  }
+
+  async function copyQueuePost(id) {
+    const item = queue.find(p => p.id === id);
+    if (!item) return;
+    try {
+      await navigator.clipboard.writeText(item.text);
+      showToast('📋 Copied! Paste into LinkedIn.');
+    } catch {
+      showToast('📋 Tap & hold to copy the post text');
+    }
+  }
+
+  function renderQueue() {
+    const list = document.getElementById('queue-list');
+    const badge = document.getElementById('queue-badge');
+    const pending = queue.filter(p => p.status !== 'posted');
+    badge.textContent = pending.length;
+
+    if (queue.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="icon">✍️</div><h3>No posts queued yet</h3><p>Generate a post and save it to your queue.</p></div>`;
+      document.getElementById('next-post-banner').style.display = 'none';
+      return;
+    }
+
+    const next = pending[0];
+    if (next) {
+      document.getElementById('next-post-banner').style.display = 'flex';
+      document.getElementById('next-post-title').textContent = 'Next post ready to publish';
+      document.getElementById('next-post-date').textContent = formatDate(next.scheduledFor);
+    } else {
+      document.getElementById('next-post-banner').style.display = 'none';
+    }
+
+    list.innerHTML = queue.slice().reverse().map(item => `
+      <div class="queue-item">
+        <div class="queue-item-meta">
+          <span class="status-dot ${item.status}">${item.status}</span>
+          <span style="font-size:11px;color:var(--muted)">${formatDate(item.scheduledFor)}</span>
+        </div>
+        <div class="queue-text">${escHtml(item.text)}</div>
+        <div class="queue-actions">
+          <button class="btn btn-primary" onclick="copyQueuePost(${item.id})">📋 Copy</button>
+          ${item.status !== 'posted' ? `<button class="btn btn-secondary" onclick="markPosted(${item.id})">✅ Posted</button>` : ''}
+          <button class="btn btn-secondary" style="color:var(--danger);border-color:var(--danger)" onclick="deleteFromQueue(${item.id})">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── SETTINGS ──
+  function saveSettings() {
+    settings = {
+      apiKey: document.getElementById('api-key-input').value.trim(),
+      name:   document.getElementById('profile-name').value.trim(),
+      role:   document.getElementById('profile-role').value.trim(),
+      focus:  document.getElementById('profile-focus').value.trim()
+    };
+    localStorage.setItem('pp_settings', JSON.stringify(settings));
+    showToast('✅ Settings saved!');
+  }
+
+  function updateSettingsStats() {
+    document.getElementById('settings-queue-count').textContent = queue.filter(p => p.status !== 'posted').length;
+    document.getElementById('settings-total-count').textContent = totalGenerated;
+  }
+
+  // ── UTILS ──
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+
+  let toastTimer;
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+  }
+
+  // ── SERVICE WORKER ──
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>
