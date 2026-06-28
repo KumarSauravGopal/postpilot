@@ -516,7 +516,7 @@ Write ONLY the post. No preamble or explanation.`;
 
     try {
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -530,7 +530,8 @@ Write ONLY the post. No preamble or explanation.`;
       const data = await res.json();
 
       if (data.error) {
-        showToast('❌ API error: ' + (data.error.message || 'Check your key'));
+        showToast('❌ ' + (data.error.message || 'API error. Check your key.'));
+        console.error('Gemini error:', data.error);
         return;
       }
 
